@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background-color: #1976D2;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .camera-container {
+            flex: 1;
+            background-color: #000;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #camera-view {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .controls {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .capture-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: #1976D2;
+            border: 5px solid white;
+            box-shadow: 0 0 0 4px #1976D2;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .capture-btn:active {
+            transform: scale(0.95);
+            background-color: #1565C0;
+        }
+        
+        .results-container {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: white;
+            border-radius: 15px;
+            margin-top: 10px;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .results-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #1976D2;
+        }
+        
+        .result-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Vision Assistant</h1>
+    </div>
+    
+    <div class="camera-container">
+        <video id="camera-view" autoplay playsinline></video>
+    </div>
+    
+    <div class="controls">
+        <div class="capture-btn" id="capture-btn"></div>
+        
+        <div class="results-container" id="results-container">
+            <div class="results-title">Результаты:</div>
+            <div id="results-content">Наведите камеру на объект и нажмите кнопку</div>
+        </div>
+        
+        <div class="status" id="status">Готово</div>
+    </div>
+
+    <script>
+        // Элементы интерфейса
+        const cameraView = document.getElementById('camera-view');
+        const captureBtn = document.getElementById('capture-btn');
+        const resultsContent = document.getElementById('results-content');
+        const statusEl = document.getElementById('status');
+        
+        // Состояние приложения
+        let stream = null;
+        let isProcessing = false;
+        
+        // Инициализация камеры
+        async function initCamera() {
+            try {
+                statusEl.textContent = "Запуск камеры...";
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false 
+                });
+                cameraView.srcObject = stream;
+                statusEl.textContent = "Готово";
+            } catch (err) {
+                console.error("Ошибка камеры:", err);
+                statusEl.textContent = "Ошибка доступа к камере";
+                resultsContent.textContent = "Пожалуйста, разрешите доступ к камере и перезагрузите страницу";
+            }
+        }
+        
+        // Захват изображения
+        captureBtn.addEventListener('click', async () => {
+            if (isProcessing || !stream) return;
+            
+            isProcessing = true;
+            statusEl.textContent = "Обработка...";
+            
+            try {
+                // Создаем временный canvas для захвата кадра
+                const canvas = document.createElement('canvas');
+                canvas.width = cameraView.videoWidth;
+                canvas.height = cameraView.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(cameraView, 0, 0, canvas.width, canvas.height);
+                
+                // Здесь будет вызов API для распознавания объектов
+                // В демо-версии просто имитируем работу
+                simulateObjectDetection();
+                
+            } catch (err) {
+                console.error("Ошибка захвата:", err);
+                statusEl.textContent = "Ошибка обработки";
+                isProcessing = false;
+            }
+        });
+        
+        // Имитация работы API распознавания
+        function simulateObjectDetection() {
+            setTimeout(() => {
+                const objects = [
+                    { name: "человек", count: 1 },
+                    { name: "стол", count: 2 },
+                    { name: "монитор", count: 1 },
+                    { name: "смартфон", count: 1 }
+                ];
+                
+                displayResults(objects);
+                isProcessing = false;
+                statusEl.textContent = "Готово";
+            }, 1500);
+        }
+        
+        // Отображение результатов
+        function displayResults(objects) {
+            if (objects.length === 0) {
+                resultsContent.innerHTML = "<div class='result-item'>Объекты не обнаружены</div>";
+                return;
+            }
+            
+            let html = "";
+            objects.forEach(obj => {
+                if (obj.count === 1) {
+                    html += `<div class="result-item">${obj.name}</div>`;
+                } else {
+                    // Простое правило для множественного числа
+                    let plural;
+                    if (obj.name.endsWith('а') || obj.name.endsWith('я')) {
+                        plural = obj.name.slice(0, -1) + 'и';
+                    } else if (obj.name.endsWith('ь')) {
+                        plural = obj.name.slice(0, -1) + 'и';
+                    } else {
+                        plural = obj.name + 'ы';
+                    }
+                    html += `<div class="result-item">${obj.count} ${plural}</div>`;
+                }
+            });
+            
+            resultsContent.innerHTML = html;
+            
+            // Здесь можно добавить синтез речи
+            const objectsText = objects.map(obj => 
+                obj.count === 1 ? obj.name : `${obj.count} ${obj.name}`
+            ).join(", ");
+            speak("Обнаружены: " + objectsText);
+        }
+        
+        // Синтез речи
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ru-RU';
+                speechSynthesis.speak(utterance);
+            }
+        }
+        
+        // Инициализация при загрузке
+        window.addEventListener('DOMContentLoaded', initCamera);
+        
+        // Остановка камеры при закрытии
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
