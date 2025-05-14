@@ -128,7 +128,7 @@ class ObjectDetectionApp(App):
                                    size_hint=(1, 0.3),
                                    padding=10,
                                    spacing=5)
-        
+         
         results_title = Label(text='[b]Результаты:[/b]',
                             font_size=FONT_SIZE_TEXT,
                             color=[0, 0, 0, 1],
