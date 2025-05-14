@@ -39,7 +39,6 @@ python --version
 git clone https://github.com/5ekastanx/Noongil_D.git
 cd Noongil_D
 ```
-
 ---
 
 ### 🧪 3. Создание виртуального окружения
