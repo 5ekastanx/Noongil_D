@@ -14,7 +14,7 @@ app = Flask(__name__,
 
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["https://your-production-domain.com"],
+        "origins": ["https://*.railway.app"],  # Разрешите домены Railway
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
@@ -111,7 +111,7 @@ def detect_objects():
         img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
         # Здесь должен быть ваш реальный API ключ
-        api_key = "AIzaSyCFR3Vmz0-hpm26OMo6NeAtrdgmigpqueU"
+        api_key = os.environ.get('GOOGLE_API_KEY', 'AIzaSyCFR3Vmz0-hpm26OMo6NeAtrdgmigpqueU')
         
         # Отправляем в Google Vision API
         response = requests.post(
