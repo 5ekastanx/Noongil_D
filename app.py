@@ -110,7 +110,6 @@ def detect_objects():
         image.save(buffered, format="JPEG", quality=85)
         img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-        # Здесь должен быть ваш реальный API ключ
         api_key = os.environ.get('GOOGLE_API_KEY', 'AIzaSyCFR3Vmz0-hpm26OMo6NeAtrdgmigpqueU')
         
         # Отправляем в Google Vision API
@@ -174,5 +173,5 @@ def detect_objects():
         return jsonify([{"name": "ошибка", "count": 1}])
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5000))  
     app.run(host='0.0.0.0', port=port)
