@@ -87,7 +87,7 @@ async function captureAndDetect() {
         
         const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
         
-        const response = await fetch('http://localhost:5000/api/detect', {
+        const response = await fetch('/api/detect', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
