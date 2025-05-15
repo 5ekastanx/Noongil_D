@@ -9,6 +9,8 @@ const statusIndicator = statusEl.querySelector('.status-indicator');
 let stream = null;
 let isProcessing = false;
 
+
+
 // Инициализация камеры
 async function initCamera() {
     try {
@@ -64,6 +66,20 @@ function createErrorState(message) {
         </div>
     `;
 }
+
+// Добавьте перед speechSynthesis.speak():
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+audioCtx.resume().then(() => {
+    window.speechSynthesis.speak(utterance);
+});
+// Добавьте в script.js:
+function checkSpeechSupport() {
+    if (!('speechSynthesis' in window)) {
+        alert("Ваш браузер не поддерживает голосовое озвучивание");
+    }
+}
+// Вызовите при загрузке:
+window.addEventListener('DOMContentLoaded', checkSpeechSupport);
 
 // Захват изображения
 async function captureAndDetect() {
@@ -146,15 +162,17 @@ function displayResults(objects) {
 
 // Озвучивание результатов
 function speakResults(objects) {
-    if ('speechSynthesis' in window) {
-        const text = objects.map(obj => 
-            obj.count > 1 ? `${obj.count} ${obj.name}` : obj.name
-        ).join(', ');
-        
-        const utterance = new SpeechSynthesisUtterance("Обнаружены: " + text);
-        utterance.lang = 'ru-RU';
-        window.speechSynthesis.speak(utterance);
-    }
+    if (!('speechSynthesis' in window)) return;
+    
+    const utterance = new SpeechSynthesisUtterance();
+    utterance.lang = 'ru-RU';
+    utterance.text = "Обнаружены: " + objects.map(obj => 
+        obj.count > 1 ? `${obj.count} ${obj.name}` : obj.name
+    ).join(', ');
+    
+    // Сброс предыдущей речи
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
 }
 
 // Инициализация при загрузке
