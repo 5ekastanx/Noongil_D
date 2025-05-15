@@ -1,39 +1,84 @@
+:root {
+    --primary-color: #1976D2;
+    --primary-dark: #1565C0;
+    --primary-light: #E3F2FD;
+    --secondary-color: #F5F5F5;
+    --text-primary: #212121;
+    --text-secondary: #757575;
+    --white: #FFFFFF;
+    --divider-color: #E0E0E0;
+    --error-color: #D32F2F;
+    --success-color: #388E3C;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
-    background-color: #f5f5f5;
-    color: #333;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--secondary-color);
+    color: var(--text-primary);
     height: 100vh;
     display: flex;
     flex-direction: column;
+    line-height: 1.5;
 }
 
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+/* Header Styles */
 .header {
-    background-color: #1976D2;
-    color: white;
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 10;
 }
 
-.header h1 {
-    font-size: 24px;
-    font-weight: bold;
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
 }
 
+.logo svg {
+    flex-shrink: 0;
+}
+
+.logo h1 {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Camera Styles */
 .camera-container {
     flex: 1;
-    background-color: #000;
     position: relative;
-    overflow: hidden;
+    background-color: #000;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+}
+
+.camera-frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 #camera-view {
@@ -41,65 +86,189 @@ body {
     height: 100%;
     object-fit: cover;
     transform: scaleX(-1);
+    display: block;
 }
 
+.focus-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    border: 2px dashed rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* Controls Styles */
 .controls {
     padding: 20px;
+    background-color: var(--white);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: white;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    gap: 16px;
 }
 
 .capture-btn {
-    width: 70px;
-    height: 70px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background-color: #1976D2;
-    border: 5px solid white;
-    box-shadow: 0 0 0 4px #1976D2;
-    margin-bottom: 20px;
+    background-color: var(--primary-color);
+    border: 4px solid var(--white);
+    box-shadow: 0 0 0 4px var(--primary-color);
     cursor: pointer;
-    transition: all 0.2s;
-    color: white;
-    font-size: 14px;
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -36px;
+}
+
+.capture-btn:active {
+    transform: scale(0.95);
+    background-color: var(--primary-dark);
 }
 
 .capture-btn:disabled {
-    background-color: #cccccc;
-    box-shadow: 0 0 0 4px #999999;
+    background-color: #BDBDBD;
+    box-shadow: 0 0 0 4px #E0E0E0;
     cursor: not-allowed;
 }
 
-.results-container {
-    max-height: 200px;
-    overflow-y: auto;
-    padding: 15px;
-    background-color: white;
-    border-radius: 15px;
-    margin-top: 10px;
-    width: 100%;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.capture-icon {
+    width: 32px;
+    height: 32px;
+    background-color: var(--white);
+    border-radius: 50%;
 }
 
-.results-title {
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #1976D2;
+/* Results Styles */
+.results-container {
+    width: 100%;
+    max-height: 200px;
+    background-color: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.results-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: var(--primary-light);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.results-header h3 {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+.results-content {
+    padding: 12px 16px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 0;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.empty-state p {
+    font-size: 14px;
+    max-width: 80%;
 }
 
 .result-item {
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--divider-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .result-item:last-child {
     border-bottom: none;
 }
 
+.result-name {
+    font-weight: 500;
+}
+
+.result-count {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+/* Status Styles */
 .status {
-    margin-top: 10px;
-    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-indicator.ready {
+    background-color: var(--success-color);
+}
+
+.status-indicator.processing {
+    background-color: #FFA000;
+}
+
+.status-indicator.error {
+    background-color: var(--error-color);
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.pulse {
+    animation: pulse 1.5s infinite;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+    .controls {
+        padding: 16px;
+    }
+    
+    .capture-btn {
+        width: 64px;
+        height: 64px;
+        margin-top: -32px;
+    }
+    
+    .results-container {
+        max-height: 180px;
+    }
 }

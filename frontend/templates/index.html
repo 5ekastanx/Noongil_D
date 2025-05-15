@@ -2,30 +2,60 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vision Assistant</title>
     <link rel="stylesheet" href="/static/css/style.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> 
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="header">
-        <h1>Vision Assistant</h1>
-    </div>
-    
-    <div class="camera-container">
-        <video id="camera-view" autoplay playsinline></video>
-    </div>
-    
-    <div class="controls">
-        <button id="capture-btn" class="capture-btn">Сканировать</button>
-        
-        <div class="results-container" id="results-container">
-            <div class="results-title">Результаты:</div>
-            <div id="results-content">Наведите камеру на объект</div>
+    <div class="app-container">
+        <div class="header">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ffffff" width="24px" height="24px">
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
+                </svg>
+                <h1>Vision Assistant</h1>
+            </div>
         </div>
         
-        <div class="status" id="status">Готово</div>
+        <div class="camera-container">
+            <div class="camera-frame">
+                <video id="camera-view" autoplay playsinline></video>
+                <div class="focus-circle"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="capture-btn" class="capture-btn">
+                <div class="capture-icon"></div>
+            </button>
+            
+            <div class="results-container" id="results-container">
+                <div class="results-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1976D2" width="20px" height="20px">
+                        <path d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                        <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm1-9h-2V7h2v1z"/>
+                    </svg>
+                    <h3>Результаты распознавания</h3>
+                </div>
+                <div class="results-content" id="results-content">
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#999" width="48px" height="48px">
+                            <path d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                        </svg>
+                        <p>Наведите камеру на объект и нажмите кнопку</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status" id="status">
+                <span class="status-indicator ready"></span>
+                <span>Готов к работе</span>
+            </div>
+        </div>
     </div>
 
     <script src="/static/js/script.js"></script>
