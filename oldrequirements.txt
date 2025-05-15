@@ -1,8 +1,0 @@
-opencv-python
-numpy
-pillow
-requests
-gtts
-pygame
-googletrans==4.0.0-rc1
-kivy 
