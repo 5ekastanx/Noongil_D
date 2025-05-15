@@ -101,7 +101,7 @@ def detect_objects():
             
         # Сохранение для отладки
         os.makedirs('debug_images', exist_ok=True)
-        debug_path = os.path.join('debug_images', 'last_debug.jpg')
+        debug_path = os.path.join('/tmp/debug_images', 'last_debug.jpg')
         image.save(debug_path, quality=85)
         print(f"Debug image saved to {debug_path}")
 
