@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Assistant</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> 
+</head>
+<body>
+    <div class="header">
+        <h1>Vision Assistant</h1>
+    </div>
+    
+    <div class="camera-container">
+        <video id="camera-view" autoplay playsinline></video>
+    </div>
+    
+    <div class="controls">
+        <button id="capture-btn" class="capture-btn">Сканировать</button>
+        
+        <div class="results-container" id="results-container">
+            <div class="results-title">Результаты:</div>
+            <div id="results-content">Наведите камеру на объект</div>
+        </div>
+        
+        <div class="status" id="status">Готово</div>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
