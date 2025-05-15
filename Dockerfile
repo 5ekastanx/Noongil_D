@@ -13,4 +13,4 @@ COPY . .
 RUN mkdir -p /tmp/debug_images
 
 # Запускаем приложение
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "--timeout", "120", "wsgi:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
