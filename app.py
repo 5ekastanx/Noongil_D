@@ -9,8 +9,8 @@ from flask_cors import CORS
 from googletrans import Translator
 
 app = Flask(__name__, 
-            template_folder='../frontend/templates',
-            static_folder='../frontend/static')
+            template_folder='templates',
+            static_folder='static')
 
 CORS(app, resources={
     r"/api/*": {
