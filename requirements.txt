@@ -9,6 +9,6 @@ openai==0.27.2
 flask-socketio==5.3.2
 python-engineio==4.3.3
 python-socketio==5.7.1
-pyaudio
+pyaudio @ https://files.pythonhosted.org/packages/ab/42/b4f04721c5c5bfc196ce156b3c768998ef8c0ae3654ed29ea5020c749a6b/PyAudio-0.2.12-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 pygame
 gTTS
