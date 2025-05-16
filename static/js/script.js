@@ -1,25 +1,19 @@
-// Элементы интерфейса
 const cameraView = document.getElementById('camera-view');
 const captureBtn = document.getElementById('capture-btn');
 const resultsContent = document.getElementById('results-content');
 const statusEl = document.getElementById('status');
 const statusIndicator = statusEl.querySelector('.status-indicator');
+const voiceBtn = document.getElementById('voice-btn');
+const aiResponseEl = document.getElementById('ai-response');
 
-// Состояние приложения
 let stream = null;
 let isProcessing = false;
+let recognition = null;
 
-
-
-// Инициализация камеры
 async function initCamera() {
     try {
         updateStatus('Инициализация камеры...', 'processing');
         
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(d => d.kind === 'videoinput');
-        
-        // Выбираем заднюю камеру на мобильных устройствах
         const constraints = {
             video: {
                 facingMode: 'environment',
@@ -34,31 +28,25 @@ async function initCamera() {
         
         cameraView.onloadedmetadata = () => {
             cameraView.play();
-            updateStatus('Готов к работе', 'ready');
-        };
-        
-        cameraView.onerror = () => {
-            updateStatus('Ошибка видео', 'error');
+            updateStatus('Deasan AI готов', 'ready');
         };
         
     } catch (err) {
         console.error("Camera error:", err);
-        updateStatus('Ошибка доступа к камере', 'error');
-        resultsContent.innerHTML = createErrorState('Пожалуйста, разрешите доступ к камере');
+        updateStatus('Ошибка камеры', 'error');
+        showError('Разрешите доступ к камере');
     }
 }
 
-// Обновление статуса
 function updateStatus(text, state) {
     statusEl.querySelector('span:last-child').textContent = text;
     statusIndicator.className = 'status-indicator ' + state;
 }
 
-// Создание состояния ошибки
-function createErrorState(message) {
-    return `
-        <div class="empty-state">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#D32F2F" width="48px" height="48px">
+function showError(message) {
+    resultsContent.innerHTML = `
+        <div class="empty-state error">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#D32F2F">
                 <path d="M0 0h24v24H0z" fill="none"/>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
             </svg>
@@ -67,28 +55,82 @@ function createErrorState(message) {
     `;
 }
 
-// Добавьте перед speechSynthesis.speak():
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-audioCtx.resume().then(() => {
-    window.speechSynthesis.speak(utterance);
-});
-// Добавьте в script.js:
-function checkSpeechSupport() {
-    if (!('speechSynthesis' in window)) {
-        alert("Ваш браузер не поддерживает голосовое озвучивание");
+function initVoiceRecognition() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showError('Браузер не поддерживает голосовой ввод');
+        return null;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = document.documentElement.lang === 'ru' ? 'ru-RU' : 'en-US';
+    
+    recognition.onstart = () => {
+        voiceBtn.classList.add('active');
+        updateStatus('Слушаю...', 'processing');
+        if (aiResponseEl) aiResponseEl.textContent = '';
+    };
+    
+    recognition.onend = () => {
+        voiceBtn.classList.remove('active');
+        updateStatus('Готов к работе', 'ready');
+    };
+    
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (aiResponseEl) aiResponseEl.textContent = `Вы: ${transcript}`;
+        processVoiceCommand(transcript);
+    };
+    
+    recognition.onerror = (event) => {
+        console.error('Recognition error:', event.error);
+        showError('Ошибка распознавания');
+        if (aiResponseEl) aiResponseEl.textContent = 'Ошибка распознавания голоса';
+    };
+    
+    return recognition;
+}
+
+async function processVoiceCommand(command) {
+    try {
+        updateStatus('Обработка...', 'processing');
+        
+        const response = await fetch('/api/process_command', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ command: command })
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        
+        const data = await response.json();
+        
+        if (data.type === 'object_recognition') {
+            setTimeout(captureAndDetect, 1000);
+        } else if (aiResponseEl) {
+            aiResponseEl.innerHTML += `<br>Deasan AI: ${data.message}`;
+        }
+        
+    } catch (err) {
+        console.error("Command error:", err);
+        showError('Ошибка обработки');
+        if (aiResponseEl) aiResponseEl.textContent = 'Ошибка обработки команды';
+    } finally {
+        updateStatus('Готов к работе', 'ready');
     }
 }
-// Вызовите при загрузке:
-window.addEventListener('DOMContentLoaded', checkSpeechSupport);
 
-// Захват изображения
 async function captureAndDetect() {
     if (isProcessing || !stream) return;
     
     isProcessing = true;
     captureBtn.disabled = true;
-    updateStatus('Обработка изображения...', 'processing');
-    captureBtn.classList.add('pulse');
+    updateStatus('Анализ изображения...', 'processing');
     
     try {
         const canvas = document.createElement('canvas');
@@ -96,15 +138,13 @@ async function captureAndDetect() {
         canvas.height = cameraView.videoHeight;
         const ctx = canvas.getContext('2d');
         
-        // Зеркальное отражение для естественного вида
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(cameraView, 0, 0, canvas.width, canvas.height);
         
         const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
         
-        const API_URL = window.location.origin;
-        const response = await fetch(`${API_URL}/api/detect`, {
+        const response = await fetch('/api/detect', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -119,31 +159,28 @@ async function captureAndDetect() {
         
     } catch (err) {
         console.error("Detect error:", err);
-        updateStatus('Ошибка обработки', 'error');
-        resultsContent.innerHTML = createErrorState('Не удалось обработать изображение');
+        showError('Ошибка обработки');
     } finally {
         isProcessing = false;
         captureBtn.disabled = false;
-        captureBtn.classList.remove('pulse');
         updateStatus('Готов к работе', 'ready');
     }
 }
 
-// Отображение результатов
 function displayResults(objects) {
-    if (!objects || !Array.isArray(objects)) {
-        resultsContent.innerHTML = createErrorState('Нет результатов');
+    if (!objects || objects.error) {
+        showError(objects?.error || 'Нет результатов');
         return;
     }
     
     if (objects.length === 0) {
         resultsContent.innerHTML = `
             <div class="empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#999" width="48px" height="48px">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#999">
                     <path d="M0 0h24v24H0z" fill="none"/>
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
                 </svg>
-                <p>Объекты не обнаружены</p>
+                <p>Объекты не найдены</p>
             </div>
         `;
         return;
@@ -157,33 +194,49 @@ function displayResults(objects) {
     `).join('');
     
     resultsContent.innerHTML = html;
-    speakResults(objects);
 }
 
-// Озвучивание результатов
-function speakResults(objects) {
-    if (!('speechSynthesis' in window)) return;
+function toggleVoiceInput() {
+    if (!recognition) {
+        recognition = initVoiceRecognition();
+    }
     
-    const utterance = new SpeechSynthesisUtterance();
-    utterance.lang = 'ru-RU';
-    utterance.text = "Обнаружены: " + objects.map(obj => 
-        obj.count > 1 ? `${obj.count} ${obj.name}` : obj.name
-    ).join(', ');
-    
-    // Сброс предыдущей речи
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    try {
+        recognition.start();
+    } catch (e) {
+        console.error("Voice recognition error:", e);
+    }
 }
 
-// Инициализация при загрузке
-window.addEventListener('DOMContentLoaded', () => {
+function setLanguage(lang) {
+    fetch(`/set_language/${lang}`)
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        })
+        .catch(err => console.error("Language switch error:", err));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
     initCamera();
+    
     captureBtn.addEventListener('click', captureAndDetect);
+    voiceBtn.addEventListener('click', toggleVoiceInput);
+    
+    document.querySelectorAll('.language-switcher button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const lang = this.dataset.lang;
+            setLanguage(lang);
+        });
+    });
 });
 
-// Очистка при закрытии
 window.addEventListener('beforeunload', () => {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
+    }
+    if (recognition) {
+        recognition.stop();
     }
 });
