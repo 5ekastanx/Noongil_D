@@ -1,13 +1,6 @@
-FROM python:3.9-slim
+FROM python:3.9.10-slim-buster
 
 WORKDIR /app
-
-# Устанавливаем системные зависимости
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    portaudio19-dev \
-    && rm -rf /var/lib/apt/lists/*
 
 # Сначала копируем только requirements.txt для кэширования
 COPY requirements.txt .
