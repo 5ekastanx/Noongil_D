@@ -1,20 +1,25 @@
-FROM python:3.9.10-slim-buster  # Конкретный образ с Python 3.9.10
+FROM python:3.9-slim
 
 WORKDIR /app
 
-# Установка системных зависимостей
+# Устанавливаем системные зависимости для PyAudio и других пакетов
 RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
     portaudio19-dev \
+    libasound2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Копирование и установка зависимостей
+# Копируем зависимости первыми для кэширования
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Копирование остальных файлов
+# Копируем остальные файлы
 COPY . .
 
+# Создаем необходимые директории
+RUN mkdir -p /tmp/debug_images
+
+# Запускаем приложение
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
