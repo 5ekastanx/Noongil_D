@@ -1,181 +1,182 @@
 :root {
-    --primary-color: #1976D2;
-    --primary-dark: #1565C0;
-    --primary-light: #E3F2FD;
-    --secondary-color: #F5F5F5;
-    --text-primary: #212121;
-    --text-secondary: #757575;
-    --white: #FFFFFF;
-    --divider-color: #E0E0E0;
-    --error-color: #D32F2F;
-    --success-color: #388E3C;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+    --primary-color: #4285f4;
+    --accent-color: #34a853;
+    --error-color: #ea4335;
+    --text-color: #202124;
+    --bg-color: #f8f9fa;
+    --card-color: #ffffff;
 }
 
 body {
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, sans-serif;
-    background-color: var(--secondary-color);
-    color: var(--text-primary);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    line-height: 1.5;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
 }
 
-.app-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    max-width: 100%;
-    overflow: hidden;
-}
-
-/* Header Styles */
-.header {
-    background-color: var(--primary-color);
-    color: var(--white);
-    padding: 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-}
-
-.logo svg {
-    flex-shrink: 0;
-}
-
-.logo h1 {
-    font-size: 20px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-}
-
-/* Camera Styles */
-.camera-container {
-    flex: 1;
-    position: relative;
-    background-color: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-
-.camera-frame {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-}
-
-#camera-view {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scaleX(-1);
-    display: block;
-}
-
-.focus-circle {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
-    border: 2px dashed rgba(255, 255, 255, 0.7);
-    border-radius: 50%;
-    pointer-events: none;
-    opacity: 0.8;
-}
-
-/* Controls Styles */
-.controls {
+.container {
+    max-width: 800px;
+    margin: 0 auto;
     padding: 20px;
-    background-color: var(--white);
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
 }
 
-.capture-btn {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background-color: var(--primary-color);
-    border: 4px solid var(--white);
-    box-shadow: 0 0 0 4px var(--primary-color);
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+h1 {
+    margin: 0;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.language-switcher {
+    display: flex;
+    gap: 10px;
+}
+
+.language-switcher button {
+    background: none;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 5px 15px;
+    border-radius: 20px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.language-switcher button:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    background: var(--card-color);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+    transition: background-color 0.3s;
+}
+
+.status-indicator.ready {
+    background-color: var(--accent-color);
+}
+
+.status-indicator.processing {
+    background-color: #fbbc05;
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator.error {
+    background-color: var(--error-color);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.camera-container {
     position: relative;
+    width: 100%;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.camera-container video {
+    width: 100%;
+    display: block;
+    transform: scaleX(-1); /* Зеркальное отражение */
+}
+
+.controls {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: -36px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+    position: relative;
 }
 
-.capture-btn:active {
+.btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.btn.primary {
+    background-color: var(--primary-color);
+}
+
+.btn.accent {
+    background-color: var(--accent-color);
+}
+
+.btn:hover {
+    transform: scale(1.05);
+}
+
+.btn:active {
     transform: scale(0.95);
-    background-color: var(--primary-dark);
 }
 
-.capture-btn:disabled {
-    background-color: #BDBDBD;
-    box-shadow: 0 0 0 4px #E0E0E0;
-    cursor: not-allowed;
+.btn.active {
+    animation: pulse 1.5s infinite;
 }
 
-.capture-icon {
-    width: 32px;
-    height: 32px;
-    background-color: var(--white);
-    border-radius: 50%;
-}
-
-/* Results Styles */
 .results-container {
-    width: 100%;
-    max-height: 200px;
-    background-color: var(--white);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-}
-
-.results-header {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    background-color: var(--primary-light);
-    border-bottom: 1px solid var(--divider-color);
+    flex-direction: column;
+    gap: 20px;
 }
 
-.results-header h3 {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--primary-color);
+.results, .ai-response {
+    background: var(--card-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.results-content {
-    padding: 12px 16px;
-    max-height: 150px;
-    overflow-y: auto;
+.ai-response {
+    min-height: 80px;
+    font-size: 15px;
+    line-height: 1.6;
 }
 
 .empty-state {
@@ -183,23 +184,31 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 16px 0;
-    color: var(--text-secondary);
+    padding: 30px 20px;
     text-align: center;
+    color: #5f6368;
 }
 
-.empty-state p {
-    font-size: 14px;
-    max-width: 80%;
+.empty-state svg {
+    margin-bottom: 15px;
+    width: 48px;
+    height: 48px;
+}
+
+.empty-state.error {
+    color: var(--error-color);
+}
+
+.empty-state.error svg {
+    fill: var(--error-color);
 }
 
 .result-item {
-    padding: 10px 0;
-    border-bottom: 1px solid var(--divider-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f1f1;
 }
 
 .result-item:last-child {
@@ -208,67 +217,34 @@ body {
 
 .result-name {
     font-weight: 500;
+    font-size: 16px;
 }
 
 .result-count {
-    background-color: var(--primary-color);
+    background: var(--primary-color);
     color: white;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 12px;
-    font-size: 12px;
-}
-
-/* Status Styles */
-.status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     font-size: 14px;
-    color: var(--text-secondary);
 }
 
-.status-indicator {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-}
-
-.status-indicator.ready {
-    background-color: var(--success-color);
-}
-
-.status-indicator.processing {
-    background-color: #FFA000;
-}
-
-.status-indicator.error {
-    background-color: var(--error-color);
-}
-
-/* Animations */
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-.pulse {
-    animation: pulse 1.5s infinite;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 480px) {
-    .controls {
-        padding: 16px;
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
     }
     
-    .capture-btn {
-        width: 64px;
-        height: 64px;
-        margin-top: -32px;
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
     
-    .results-container {
-        max-height: 180px;
+    .language-switcher {
+        align-self: flex-end;
+    }
+    
+    .btn {
+        width: 48px;
+        height: 48px;
     }
 }
