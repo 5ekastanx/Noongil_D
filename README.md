@@ -55,7 +55,6 @@ venv\Scripts\activate
 ### 📥 4. Установка зависимостей
 
 ```bash
-cd ./backend
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
