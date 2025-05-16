@@ -110,7 +110,7 @@ def detect_objects():
         image.save(buffered, format="JPEG", quality=85)
         img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-        api_key = os.environ.get('GOOGLE_API_KEY', 'AIzaSyCFR3Vmz0-hpm26OMo6NeAtrdgmigpqueU')
+        api_key = os.environ.get('GOOGLE_API_KEY')
         
         # Отправляем в Google Vision API
         response = requests.post(
