@@ -6,10 +6,8 @@ googletrans==4.0.0-rc1
 flask-cors
 SpeechRecognition==3.8.1
 openai==0.27.2
-gunicorn==20.1.0
 flask-socketio==5.3.2
 python-engineio==4.3.3
 python-socketio==5.7.1
-pyaudio==0.2.12
 pygame
 gTTS
