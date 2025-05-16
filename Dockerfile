@@ -2,6 +2,13 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
+# Устанавливаем системные зависимости
+RUN apt-get update && apt-get install -y \
+    gcc \
+    python3-dev \
+    portaudio19-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Сначала копируем только requirements.txt для кэширования
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
