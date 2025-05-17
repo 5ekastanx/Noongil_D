@@ -52,6 +52,21 @@
             <div class="ai-response" id="ai-response">
                 <!-- Здесь будут появляться ответы AI -->
             </div>
+            <audio controls autoplay id="player"></audio>
+            <script>
+            fetch("/speak", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: "Привет, как дела?" })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.audio_url) {
+                document.getElementById("player").src = data.audio_url;
+                }
+            });
+            </script>
+
         </div>
     </div>
     
