@@ -16,6 +16,9 @@ import pygame
 import tempfile
 import re
 import logging
+from io import BytesIO
+from pydub import AudioSegment
+from pydub.playback import play
 
 app = Flask(__name__, 
             template_folder='templates',
@@ -214,15 +217,26 @@ class DeasanAI:
 deasan_ai = DeasanAI()
 
 def speak(text, lang=None):
-    """Возвращает текст для озвучивания на клиенте"""
-    if not lang:
-        lang = session.get('language', 'ru')
-    logger.info(f"TTS request: {text}")
-    return {
-        'action': 'speak',
-        'text': text,
-        'lang': 'ru-RU' if lang == 'ru' else 'en-US'
-    }
+    """Универсальная функция озвучивания"""
+    def _speak():
+        try:
+            # Создаем временный файл в памяти
+            with BytesIO() as audio_buffer:
+                tts = gTTS(text=text, lang='ru' if lang == 'ru' else 'en')
+                tts.write_to_fp(audio_buffer)
+                audio_buffer.seek(0)
+                
+                # Воспроизводим через pydub
+                audio = AudioSegment.from_mp3(audio_buffer)
+                play(audio)
+                
+        except Exception as e:
+            logger.error(f"Ошибка воспроизведения: {e}")
+            # Резервный вывод в консоль
+            print(f"Озвучка: {text}")
+
+    # Запускаем в отдельном потоке, чтобы не блокировать приложение
+    threading.Thread(target=_speak).start()
 
 def should_recognize_objects(command):
     """Определяет, нужно ли распознавать объекты"""
