@@ -16,10 +16,5 @@ COPY . .
 # Устанавливаем переменные среды
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
-ENV PORT=5000
 
-# Открываем порт
-EXPOSE $PORT
-
-# Запускаем приложение
-CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
