@@ -44,21 +44,71 @@ function updateStatus(text, state) {
 }
 
 // Функция для озвучивания текста
+// Глобальная переменная для хранения текущего utterance
+let currentUtterance = null;
+
 function speak(text, lang = 'ru-RU') {
+    // Отменяем текущее воспроизведение, если есть
+    if (currentUtterance) {
+        window.speechSynthesis.cancel();
+    }
+    
     if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
+        currentUtterance = new SpeechSynthesisUtterance(text);
+        currentUtterance.lang = lang;
+        currentUtterance.rate = 1.0;
+        currentUtterance.pitch = 1.0;
+        currentUtterance.volume = 1.0;
         
-        // Настройки голоса
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
+        // Попробуем найти подходящий голос
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.lang.includes(lang)) || 
+                              voices.find(v => v.lang.includes('ru')) || 
+                              voices[0];
         
-        window.speechSynthesis.speak(utterance);
+        if (preferredVoice) {
+            currentUtterance.voice = preferredVoice;
+        }
+        
+        currentUtterance.onerror = (event) => {
+            console.error('SpeechSynthesis Error:', event);
+            // Альтернативный вывод текста
+            showTextNotification(text);
+        };
+        
+        window.speechSynthesis.speak(currentUtterance);
     } else {
-        console.log("Browser TTS not supported");
-        // Альтернатива: воспроизведение через аудио API
-        playTextAsAudio(text, lang);
+        console.error("Browser does not support speech synthesis");
+        showTextNotification(text);
+    }
+}
+
+function showTextNotification(text) {
+    // Создаем уведомление или выводим текст на экран
+    const notification = document.createElement('div');
+    notification.className = 'voice-notification';
+    notification.textContent = text;
+    document.body.appendChild(notification);
+    
+    // Автоматическое удаление через 5 секунд
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+// Инициализация голосов при загрузке
+window.speechSynthesis.onvoiceschanged = function() {
+    console.log("Available voices:", window.speechSynthesis.getVoices());
+};
+
+// Обработчик ответов от сервера
+function handleServerResponse(data) {
+    if (data.action === 'speak') {
+        speak(data.text, data.lang);
+    }
+    
+    if (data.message) {
+        document.getElementById('ai-response').textContent = data.message;
     }
 }
 
@@ -298,3 +348,11 @@ window.addEventListener('beforeunload', () => {
         recognition.stop();
     }
 });
+
+function checkSpeechSupport() {
+    if (!('speechSynthesis' in window)) {
+        alert('Ваш браузер не поддерживает синтез речи. Рекомендуем использовать Chrome, Edge или Safari.');
+        return false;
+    }
+    return true;
+}

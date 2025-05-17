@@ -216,25 +216,15 @@ class DeasanAI:
 deasan_ai = DeasanAI()
 
 def speak(text, lang=None):
-    """Озвучивание текста с использованием gTTS и pydub"""
+    """Возвращает данные для озвучивания на клиенте"""
     if not lang:
         lang = session.get('language', 'ru')
-    
-    try:
-        # Создаем аудио в памяти
-        audio_buffer = BytesIO()
-        tts = gTTS(text=text, lang='ru' if lang == 'ru' else 'en')
-        tts.write_to_fp(audio_buffer)
-        audio_buffer.seek(0)
-        
-        # Воспроизводим через pydub
-        audio = AudioSegment.from_mp3(audio_buffer)
-        play(audio)
-        
-    except Exception as e:
-        logger.error(f"Ошибка озвучивания: {e}")
-        # Резервный вывод в консоль
-        print(f"Озвучка: {text}")
+    logger.info(f"TTS request: {text}")
+    return {
+        'action': 'speak',
+        'text': text,
+        'lang': 'ru-RU' if lang == 'ru' else 'en-US'
+    }
 
 def should_recognize_objects(command):
     """Определяет, нужно ли распознавать объекты"""
