@@ -43,6 +43,16 @@ function updateStatus(text, state) {
     statusIndicator.className = 'status-indicator ' + state;
 }
 
+function speak(text, lang = 'ru-RU') {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        window.speechSynthesis.speak(utterance);
+    } else {
+        console.log("TTS not supported");
+    }
+}
+
 function showError(message) {
     resultsContent.innerHTML = `
         <div class="empty-state error">
