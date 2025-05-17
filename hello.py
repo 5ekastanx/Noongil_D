@@ -8,7 +8,6 @@ import requests
 from collections import defaultdict
 from flask_cors import CORS
 from googletrans import Translator
-import speech_recognition as sr
 import openai
 import threading
 import time
@@ -34,8 +33,6 @@ AI_MODEL = "gpt-3.5-turbo"
 MAX_OBJECTS_TO_SPEAK = 4
 
 # Инициализация компонентов
-recognizer = sr.Recognizer()
-microphone = sr.Microphone()
 translator = Translator()
 listening = False
 
@@ -216,58 +213,10 @@ class DeasanAI:
 
 deasan_ai = DeasanAI()
 
-def start_voice_assistant():
-    """Запускает фоновое прослушивание голосовых команд"""
-    global listening
-    
-    def callback(recognizer, audio):
-        try:
-            if not listening:
-                return
-                
-            text = recognizer.recognize_google(audio, language=session.get('language', 'ru'))
-            logger.info(f"Распознана команда: {text}")
-            process_voice_command(text)
-            
-        except sr.UnknownValueError:
-            logger.info("Речь не распознана")
-        except sr.RequestError as e:
-            logger.error(f"Ошибка сервиса распознавания: {e}")
-    
-    if not listening:
-        listening = True
-        stop_listening = recognizer.listen_in_background(microphone, callback)
-        logger.info("Deasan AI активирован")
-        return stop_listening
-
-def stop_voice_assistant():
-    """Останавливает фоновое прослушивание"""
-    global listening
-    listening = False
-    logger.info("Deasan AI деактивирован")
-
 def speak(text, lang=None):
-    """Озвучивает текст с использованием gTTS"""
-    if not lang:
-        lang = session.get('language', 'ru')
-    
-    try:
-        # Очистка текста от специальных символов
-        clean_text = re.sub(r'[^\w\s.,!?-]', '', text)
-        
-        with tempfile.NamedTemporaryFile(delete=True) as fp:
-            tts = gTTS(text=clean_text, lang='ru' if lang == 'ru' else 'en')
-            tts.save(f"{fp.name}.mp3")
-            
-            pygame.mixer.init()
-            pygame.mixer.music.load(f"{fp.name}.mp3")
-            pygame.mixer.music.play()
-            
-            while pygame.mixer.music.get_busy():
-                time.sleep(0.1)
-                
-    except Exception as e:
-        logger.error(f"Ошибка озвучивания: {e}")
+    """Заглушка для озвучивания текста (без реального звука)"""
+    logger.info(f"TTS (заглушка): {text}")
+    return
 
 def should_recognize_objects(command):
     """Определяет, нужно ли распознавать объекты"""
@@ -302,8 +251,6 @@ def process_voice_command(command):
 
 @app.route('/')
 def index():
-    if not listening:
-        threading.Thread(target=start_voice_assistant).start()
     return render_template('index.html')
 
 @app.route('/api/process_command', methods=['POST'])
@@ -334,7 +281,6 @@ def detect_objects():
 
         api_key = os.environ.get('GOOGLE_API_KEY', 'AIzaSyCFR3Vmz0-hpm26OMo6NeAtrdgmigpqueU')
         
-        # Отправляем в Google Vision API
         response = requests.post(
             f"https://vision.googleapis.com/v1/images:annotate?key={api_key}",
             json={
@@ -448,5 +394,5 @@ def get_language():
     return jsonify({'language': session.get('language', 'ru')})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # 5000 — fallback
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
