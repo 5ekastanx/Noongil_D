@@ -34,10 +34,7 @@ AI_MODEL = "gpt-3.5-turbo"
 MAX_OBJECTS_TO_SPEAK = 4
 
 # Инициализация компонентов
-recognizer = sr.Recognizer()
-microphone = sr.Microphone()
 translator = Translator()
-listening = False
 
 # Словари для коррекции и команд
 CORRECTION_DICT = {
@@ -216,43 +213,12 @@ class DeasanAI:
 
 deasan_ai = DeasanAI()
 
-def start_voice_assistant():
-    """Запускает фоновое прослушивание голосовых команд"""
-    global listening
-    
-    def callback(recognizer, audio):
-        try:
-            if not listening:
-                return
-                
-            text = recognizer.recognize_google(audio, language=session.get('language', 'ru'))
-            logger.info(f"Распознана команда: {text}")
-            process_voice_command(text)
-            
-        except sr.UnknownValueError:
-            logger.info("Речь не распознана")
-        except sr.RequestError as e:
-            logger.error(f"Ошибка сервиса распознавания: {e}")
-    
-    if not listening:
-        listening = True
-        stop_listening = recognizer.listen_in_background(microphone, callback)
-        logger.info("Deasan AI активирован")
-        return stop_listening
-
-def stop_voice_assistant():
-    """Останавливает фоновое прослушивание"""
-    global listening
-    listening = False
-    logger.info("Deasan AI деактивирован")
-
 def speak(text, lang=None):
     """Озвучивает текст с использованием gTTS"""
-    if not lang:
-        lang = session.get('language', 'ru')
-    
     try:
-        # Очистка текста от специальных символов
+        if not lang:
+            lang = session.get('language', 'ru')
+        
         clean_text = re.sub(r'[^\w\s.,!?-]', '', text)
         
         with tempfile.NamedTemporaryFile(delete=True) as fp:
@@ -269,41 +235,8 @@ def speak(text, lang=None):
     except Exception as e:
         logger.error(f"Ошибка озвучивания: {e}")
 
-def should_recognize_objects(command):
-    """Определяет, нужно ли распознавать объекты"""
-    command_lower = command.lower()
-    return any(trigger in command_lower for trigger in OBJECT_RECOGNITION_TRIGGERS)
-
-def process_voice_command(command):
-    """Обрабатывает голосовую команду"""
-    try:
-        lang = session.get('language', 'ru')
-        
-        if should_recognize_objects(command):
-            response = {
-                "type": "object_recognition",
-                "message": "Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects"
-            }
-            speak(response["message"], lang)
-            return jsonify(response)
-        else:
-            ai_response = deasan_ai.process_command(command, lang)
-            speak(ai_response, lang)
-            return jsonify({
-                "type": "ai_response",
-                "message": ai_response
-            })
-    
-    except Exception as e:
-        logger.error(f"Error processing voice command: {e}")
-        error_msg = deasan_ai.get_error_response(session.get('language', 'ru'))
-        speak(error_msg)
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/')
 def index():
-    if not listening:
-        threading.Thread(target=start_voice_assistant).start()
     return render_template('index.html')
 
 @app.route('/api/process_command', methods=['POST'])
@@ -311,7 +244,21 @@ def api_process_command():
     try:
         data = request.json
         command = data.get('command', '')
-        return process_voice_command(command)
+        lang = session.get('language', 'ru')
+        
+        if deasan_ai.should_recognize_objects(command):
+            return jsonify({
+                "type": "object_recognition",
+                "message": "Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects"
+            })
+        else:
+            ai_response = deasan_ai.process_command(command, lang)
+            speak(ai_response, lang)
+            return jsonify({
+                "type": "ai_response",
+                "message": ai_response
+            })
+            
     except Exception as e:
         logger.error(f"Command processing error: {e}")
         return jsonify({"error": str(e)}), 500
