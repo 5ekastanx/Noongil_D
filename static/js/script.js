@@ -94,6 +94,14 @@ function initVoiceRecognition() {
     return recognition;
 }
 
+async function playAudioFromBase64(base64Data) {
+    return new Promise((resolve) => {
+        const audio = new Audio(`data:audio/mp3;base64,${base64Data}`);
+        audio.onended = resolve;
+        audio.play().catch(e => console.error("Audio play error:", e));
+    });
+}
+
 async function processVoiceCommand(command) {
     try {
         updateStatus('Обработка...', 'processing');
@@ -109,6 +117,10 @@ async function processVoiceCommand(command) {
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         
         const data = await response.json();
+        
+        if (data.audio) {
+            await playAudioFromBase64(data.audio);
+        }
         
         if (data.type === 'object_recognition') {
             setTimeout(captureAndDetect, 1000);
@@ -155,7 +167,12 @@ async function captureAndDetect() {
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         
         const results = await response.json();
-        displayResults(results);
+        
+        if (results.audio) {
+            await playAudioFromBase64(results.audio);
+        }
+        
+        displayResults(results.results || results);
         
     } catch (err) {
         console.error("Detect error:", err);
