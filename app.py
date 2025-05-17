@@ -214,27 +214,9 @@ class DeasanAI:
 deasan_ai = DeasanAI()
 
 def speak(text, lang=None):
-    """Озвучивает текст с использованием gTTS"""
-    if not lang:
-        lang = session.get('language', 'ru')
-    
-    try:
-        # Очистка текста от специальных символов
-        clean_text = re.sub(r'[^\w\s.,!?-]', '', text)
-        
-        with tempfile.NamedTemporaryFile(delete=True) as fp:
-            tts = gTTS(text=clean_text, lang='ru' if lang == 'ru' else 'en')
-            tts.save(f"{fp.name}.mp3")
-            
-            pygame.mixer.init()
-            pygame.mixer.music.load(f"{fp.name}.mp3")
-            pygame.mixer.music.play()
-            
-            while pygame.mixer.music.get_busy():
-                time.sleep(0.1)
-                
-    except Exception as e:
-        logger.error(f"Ошибка озвучивания: {e}")
+    """Заглушка для озвучивания текста (без реального звука)"""
+    logger.info(f"TTS (заглушка): {text}")
+    return
 
 def should_recognize_objects(command):
     """Определяет, нужно ли распознавать объекты"""
