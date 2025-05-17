@@ -8,7 +8,6 @@ import requests
 from collections import defaultdict
 from flask_cors import CORS
 from googletrans import Translator
-import speech_recognition as sr
 import openai
 import threading
 import time
@@ -35,6 +34,7 @@ MAX_OBJECTS_TO_SPEAK = 4
 
 # Инициализация компонентов
 translator = Translator()
+listening = False
 
 # Словари для коррекции и команд
 CORRECTION_DICT = {
@@ -215,10 +215,11 @@ deasan_ai = DeasanAI()
 
 def speak(text, lang=None):
     """Озвучивает текст с использованием gTTS"""
+    if not lang:
+        lang = session.get('language', 'ru')
+    
     try:
-        if not lang:
-            lang = session.get('language', 'ru')
-        
+        # Очистка текста от специальных символов
         clean_text = re.sub(r'[^\w\s.,!?-]', '', text)
         
         with tempfile.NamedTemporaryFile(delete=True) as fp:
@@ -235,6 +236,37 @@ def speak(text, lang=None):
     except Exception as e:
         logger.error(f"Ошибка озвучивания: {e}")
 
+def should_recognize_objects(command):
+    """Определяет, нужно ли распознавать объекты"""
+    command_lower = command.lower()
+    return any(trigger in command_lower for trigger in OBJECT_RECOGNITION_TRIGGERS)
+
+def process_voice_command(command):
+    """Обрабатывает голосовую команду"""
+    try:
+        lang = session.get('language', 'ru')
+        
+        if should_recognize_objects(command):
+            response = {
+                "type": "object_recognition",
+                "message": "Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects"
+            }
+            speak(response["message"], lang)
+            return jsonify(response)
+        else:
+            ai_response = deasan_ai.process_command(command, lang)
+            speak(ai_response, lang)
+            return jsonify({
+                "type": "ai_response",
+                "message": ai_response
+            })
+    
+    except Exception as e:
+        logger.error(f"Error processing voice command: {e}")
+        error_msg = deasan_ai.get_error_response(session.get('language', 'ru'))
+        speak(error_msg)
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -244,21 +276,7 @@ def api_process_command():
     try:
         data = request.json
         command = data.get('command', '')
-        lang = session.get('language', 'ru')
-        
-        if deasan_ai.should_recognize_objects(command):
-            return jsonify({
-                "type": "object_recognition",
-                "message": "Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects"
-            })
-        else:
-            ai_response = deasan_ai.process_command(command, lang)
-            speak(ai_response, lang)
-            return jsonify({
-                "type": "ai_response",
-                "message": ai_response
-            })
-            
+        return process_voice_command(command)
     except Exception as e:
         logger.error(f"Command processing error: {e}")
         return jsonify({"error": str(e)}), 500
@@ -281,7 +299,6 @@ def detect_objects():
 
         api_key = os.environ.get('GOOGLE_API_KEY', 'AIzaSyCFR3Vmz0-hpm26OMo6NeAtrdgmigpqueU')
         
-        # Отправляем в Google Vision API
         response = requests.post(
             f"https://vision.googleapis.com/v1/images:annotate?key={api_key}",
             json={
@@ -395,5 +412,5 @@ def get_language():
     return jsonify({'language': session.get('language', 'ru')})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # 5000 — fallback
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
