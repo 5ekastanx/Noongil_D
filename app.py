@@ -12,13 +12,12 @@ import openai
 import threading
 import time
 from gtts import gTTS
-import pygame
 import tempfile
 import re
 import logging
-from io import BytesIO
 from pydub import AudioSegment
 from pydub.playback import play
+from io import BytesIO
 
 app = Flask(__name__, 
             template_folder='templates',
@@ -217,26 +216,25 @@ class DeasanAI:
 deasan_ai = DeasanAI()
 
 def speak(text, lang=None):
-    """Универсальная функция озвучивания"""
-    def _speak():
-        try:
-            # Создаем временный файл в памяти
-            with BytesIO() as audio_buffer:
-                tts = gTTS(text=text, lang='ru' if lang == 'ru' else 'en')
-                tts.write_to_fp(audio_buffer)
-                audio_buffer.seek(0)
-                
-                # Воспроизводим через pydub
-                audio = AudioSegment.from_mp3(audio_buffer)
-                play(audio)
-                
-        except Exception as e:
-            logger.error(f"Ошибка воспроизведения: {e}")
-            # Резервный вывод в консоль
-            print(f"Озвучка: {text}")
-
-    # Запускаем в отдельном потоке, чтобы не блокировать приложение
-    threading.Thread(target=_speak).start()
+    """Озвучивание текста с использованием gTTS и pydub"""
+    if not lang:
+        lang = session.get('language', 'ru')
+    
+    try:
+        # Создаем аудио в памяти
+        audio_buffer = BytesIO()
+        tts = gTTS(text=text, lang='ru' if lang == 'ru' else 'en')
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+        
+        # Воспроизводим через pydub
+        audio = AudioSegment.from_mp3(audio_buffer)
+        play(audio)
+        
+    except Exception as e:
+        logger.error(f"Ошибка озвучивания: {e}")
+        # Резервный вывод в консоль
+        print(f"Озвучка: {text}")
 
 def should_recognize_objects(command):
     """Определяет, нужно ли распознавать объекты"""
@@ -251,25 +249,23 @@ def process_voice_command(command):
         if should_recognize_objects(command):
             response = {
                 "type": "object_recognition",
-                "message": "Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects",
-                **speak("Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects", lang)
+                "message": "Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects"
             }
+            speak(response["message"], lang)
             return jsonify(response)
         else:
             ai_response = deasan_ai.process_command(command, lang)
+            speak(ai_response, lang)
             return jsonify({
                 "type": "ai_response",
-                "message": ai_response,
-                **speak(ai_response, lang)
+                "message": ai_response
             })
     
     except Exception as e:
         logger.error(f"Error processing voice command: {e}")
         error_msg = deasan_ai.get_error_response(session.get('language', 'ru'))
-        return jsonify({
-            "error": str(e),
-            **speak(error_msg)
-        }), 500
+        speak(error_msg)
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/')
 def index():
