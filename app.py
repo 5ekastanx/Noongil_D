@@ -213,62 +213,16 @@ class DeasanAI:
 
 deasan_ai = DeasanAI()
 
-import uuid
-
 def speak(text, lang=None):
-    """Создаёт mp3-файл и возвращает путь к нему"""
+    """Возвращает текст для озвучивания на клиенте"""
     if not lang:
-        lang = 'ru'
-
-    # Удаление лишних символов
-    clean_text = re.sub(r'[^\w\s.,!?-]', '', text)
-
-    # Уникальное имя файла
-    filename = f"{uuid.uuid4().hex}.mp3"
-    filepath = os.path.join("static/audio", filename)
-
-    try:
-        tts = gTTS(text=clean_text, lang='ru' if lang == 'ru' else 'en')
-        tts.save(filepath)
-        return filepath
-    except Exception as e:
-        logger.error(f"Ошибка озвучивания: {e}")
-        return None
-    
-def should_trigger_object_recognition(command: str) -> bool:
-    """Определяет, следует ли запускать распознавание объектов"""
-    command = command.lower()
-
-    # Применение коррекции слов
-    for wrong, correct in CORRECTION_DICT.items():
-        command = command.replace(wrong, correct)
-
-    # Проверка триггерных фраз
-    for trigger in OBJECT_RECOGNITION_TRIGGERS:
-        if trigger in command:
-            logger.info("Обнаружен триггер для распознавания объектов.")
-            return True
-
-    return False
-
-
-@app.route('/voice-command', methods=['POST'])
-def handle_voice_command():
-    data = request.json
-    command = data.get("command", "")
-    lang = data.get("lang", "ru")
-
-    if should_trigger_object_recognition(command):
-        return jsonify({"action": "object_recognition", "message": "Запускаю распознавание объектов."})
-
-    response_text = deasan_ai.process_command(command, lang)
-    audio_path = speak(response_text, lang)
-
-    return jsonify({
-        "text": response_text,
-        "audio_url": audio_path
-    })
-
+        lang = session.get('language', 'ru')
+    logger.info(f"TTS request: {text}")
+    return {
+        'action': 'speak',
+        'text': text,
+        'lang': 'ru-RU' if lang == 'ru' else 'en-US'
+    }
 
 def should_recognize_objects(command):
     """Определяет, нужно ли распознавать объекты"""
@@ -283,23 +237,25 @@ def process_voice_command(command):
         if should_recognize_objects(command):
             response = {
                 "type": "object_recognition",
-                "message": "Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects"
+                "message": "Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects",
+                **speak("Распознаю объекты перед вами" if lang == 'ru' else "Recognizing objects", lang)
             }
-            speak(response["message"], lang)
             return jsonify(response)
         else:
             ai_response = deasan_ai.process_command(command, lang)
-            speak(ai_response, lang)
             return jsonify({
                 "type": "ai_response",
-                "message": ai_response
+                "message": ai_response,
+                **speak(ai_response, lang)
             })
     
     except Exception as e:
         logger.error(f"Error processing voice command: {e}")
         error_msg = deasan_ai.get_error_response(session.get('language', 'ru'))
-        speak(error_msg)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": str(e),
+            **speak(error_msg)
+        }), 500
 
 @app.route('/')
 def index():

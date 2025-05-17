@@ -43,13 +43,61 @@ function updateStatus(text, state) {
     statusIndicator.className = 'status-indicator ' + state;
 }
 
+// Функция для озвучивания текста
 function speak(text, lang = 'ru-RU') {
     if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
+        
+        // Настройки голоса
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
         window.speechSynthesis.speak(utterance);
     } else {
-        console.log("TTS not supported");
+        console.log("Browser TTS not supported");
+        // Альтернатива: воспроизведение через аудио API
+        playTextAsAudio(text, lang);
+    }
+}
+
+// Альтернативный метод через API (если нужно)
+async function playTextAsAudio(text, lang) {
+    try {
+        const response = await fetch('/api/generate_audio', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text, lang })
+        });
+        
+        if (response.ok) {
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+        }
+    } catch (e) {
+        console.error("Audio playback error:", e);
+    }
+}
+
+// Модифицированная обработка ответов
+async function processServerResponse(response) {
+    const data = await response.json();
+    
+    if (data.action === 'speak') {
+        speak(data.text, data.lang);
+    }
+    
+    if (data.type === 'object_recognition') {
+        setTimeout(captureAndDetect, 1000);
+    }
+    
+    if (aiResponseEl && data.message) {
+        aiResponseEl.innerHTML += `<br>Deasan AI: ${data.message}`;
     }
 }
 
