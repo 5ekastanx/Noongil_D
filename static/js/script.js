@@ -257,3 +257,25 @@ window.addEventListener('beforeunload', () => {
         recognition.stop();
     }
 });
+
+let isAssistantSpeaking = false;
+
+function toggleVoiceButton(active) {
+    const button = document.getElementById('voiceButton');
+    isAssistantSpeaking = !active;
+    
+    if (isAssistantSpeaking) {
+        button.classList.add('disabled');
+        button.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+    } else {
+        button.classList.remove('disabled');
+        button.innerHTML = '<i class="fas fa-microphone"></i>';
+    }
+}
+
+// При получении ответа от ассистента
+function handleAssistantResponse() {
+    toggleVoiceButton(false);
+    // Через 3 секунды после окончания речи снова включаем
+    setTimeout(() => toggleVoiceButton(true), 3000);
+}

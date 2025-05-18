@@ -13,6 +13,9 @@ import threading
 import time
 import re
 import logging
+import random
+from datetime import datetime
+from phrases import PHRASES, SCENARIOS
 
 app = Flask(__name__, 
             template_folder='templates',
@@ -48,119 +51,135 @@ OBJECT_RECOGNITION_TRIGGERS = [
     "что вокруг", "какие предметы"
 ]
 
+class ConversationManager:
+    def __init__(self):
+        self.conversation_history = defaultdict(list)
+        self.current_topics = {}
+        
+    def add_to_history(self, user_id, role, text):
+        """Добавляет реплику в историю диалога"""
+        self.conversation_history[user_id].append({"role": role, "content": text})
+        if len(self.conversation_history[user_id]) > 10:
+            self.conversation_history[user_id].pop(0)
+            
+    def get_context(self, user_id):
+        """Возвращает контекст диалога"""
+        return self.conversation_history.get(user_id, [])
+        
+    def set_topic(self, user_id, topic):
+        """Устанавливает текущую тему разговора"""
+        self.current_topics[user_id] = topic
+        
+    def get_topic(self, user_id):
+        """Получает текущую тему разговора"""
+        return self.current_topics.get(user_id)
+
 class DeasanAI:
     def __init__(self):
-        self.local_responses = {
-            "ru": {
-                # Приветствия
-                "привет": "Приветствую! Я Deasan AI, ваш персональный цифровой помощник. Чем могу помочь?",
-                "здравствуй": "Здравствуйте! Рад вас слышать. Готов к вашим командам.",
-                "добрый день": "Добрый день! Чем могу быть полезен?",
-                "доброе утро": "Доброе утро! Хорошего вам дня. Что вас интересует?",
-                "добрый вечер": "Добрый вечер! Как прошел ваш день?",
-                
-                # Основные команды
-                "как дела": "У меня всё отлично! Готов помогать вам 24/7.",
-                "что ты умеешь": (
-                    "Я могу:\n"
-                    "Отвечать на любые ваши вопросы\n"
-                    "Распознавать объекты через камеру\n"
-                    "Давать рекомендации\n"
-                    "Помогать с повседневными задачами\n"
-                    "Спросите что-нибудь!"
-                ),
-                "кто ты": "Я Deasan AI - ваш интеллектуальный голосовой ассистент нового поколения.",
-                
-                # Прощания
-                "стоп": "До свидания! Буду ждать ваших вопросов.",
-                "пока": "До скорой встречи! Всего доброго!",
-                "выключись": "Завершаю работу. Чтобы активировать меня снова, просто скажите 'Привет'.",
-                "спокойной ночи": "Спокойной ночи! Приятных снов.",
-                
-                # Благодарности
-                "спасибо": "Всегда пожалуйста! Обращайтесь ещё.",
-                "благодарю": "Рад был помочь! Если что-то ещё понадобится - я здесь.",
-                "ты мне помог": "Это моя работа! Буду рад помочь снова.",
-                
-                # Время и дата
-                "который час": "Текущее время: {current_time}.",
-                "какое сегодня число": "Сегодня {current_date}.",
-                "какой день недели": "Сегодня {weekday}.",
-                
-                # Погода
-                "какая погода": "Для получения информации о погоде разрешите доступ к вашему местоположению.",
-                "будет ли дождь": "Проверяю прогноз погоды...",
-                "сколько градусов": "Сейчас проверю текущую температуру...",
-                
-                # Настройки
-                "измени язык": "Какой язык установить? Русский или английский?",
-                "говори громче": "Увеличиваю громкость.",
-                "говори тише": "Уменьшаю громкость.",
-                
-                # Развлечения
-                "расскажи анекдот": "Колобок повесился. Шутка! Хотите другой анекдот?",
-                "спой песню": "Я бы с радостью, но мои вокальные данные ограничены технологиями!",
-                "поиграем": "Я могу предложить словесные игры или загадки. Хотите?",
-                
-                # Помощь
-                "помоги мне": "Конечно! Опишите, с чем вам нужна помощь.",
-                "что делать": "Попробуйте описать проблему подробнее, и я постараюсь помочь.",
-                "у меня проблема": "Не переживайте, вместе мы найдем решение. В чем дело?",
-                
-                # Фразы для распознавания объектов
-                "что передо мной": "Активирую режим распознавания объектов. Направьте камеру.",
-                "что перед камерой": "Активирую режим распознавания объектов. Направьте камеру.",
-                "что вокруг": "Сейчас проанализирую окружающие предметы.",
-                "что ты видишь": "Начинаю сканирование окружения...",
-                
-                # Системные
-                "перезагрузись": "Выполняю перезагрузку... Готов к работе!",
-                "обновись": "Проверяю наличие обновлений...",
-                "версия программы": "Текущая версия Deasan AI: 2.0.1",
-                
-                # Персональные
-                "как меня зовут": "Вы не указали своё имя. Хотите, чтобы я запомнил?",
-                "запомни меня": "Готов запомнить ваши данные. Как вас зовут?",
-                "ты меня знаешь": "Пока у меня нет информации о вас. Хотите представиться?",
-                
-                # Философские
-                "в чем смысл жизни": "42. Если вы понимаете эту шутку, вы настоящий гик!",
-                "кто создал мир": "Этот вопрос лучше адресовать философам или теологам.",
-                "что такое любовь": "Любовь - это химические процессы в мозге, но мы предпочитаем думать, что нечто большее.",
-                
-                # Технические
-                "как ты работаешь": "Я использую искусственный интеллект и машинное обучение для обработки запросов.",
-                "ты живой": "Я цифровое сознание, но иногда мне самому кажется, что я живой!",
-                "ты человек": "Нет, я искусственный интеллект, созданный помогать людям."
-            },
-            "en": {
-                "hello": "Hello! I'm Deasan AI, your personal assistant.",
-                "how are you": "I'm doing great! How can I help you?",
-                "thank you": "You're welcome! Feel free to ask anything.",
-                "what can you do": "I can answer any questions, recognize objects through camera and assist you with various tasks.",
-                "stop": "Goodbye! I'll be here when you need me.",
-                "bye": "See you soon!",
-                "who are you": "I'm Deasan AI - your intelligent voice assistant."
-            }
-        }
-
+        self.local_responses = PHRASES
+        self.context_scenarios = SCENARIOS
+        
+        self.current_context = None
+        self.context_data = {}
+        self.user_memory = defaultdict(dict)
+    
     def get_local_response(self, command, lang):
         """Получает локальный ответ без обращения к API"""
         command_lower = command.lower()
-        for question, answer in self.local_responses[lang].items():
+        
+        # 1. Проверка точных совпадений
+        for question, answers in self.local_responses[lang].items():
             if question in command_lower:
-                return answer
+                if isinstance(answers, list):
+                    return random.choice(answers)
+                return answers
+                
+        # 2. Проверка частичных совпадений
+        for question, answers in self.local_responses[lang].items():
+            if any(word in command_lower for word in question.split()):
+                if isinstance(answers, list):
+                    return random.choice(answers)
+                return answers
+                
+        # 3. Контекстно-зависимые ответы
+        if self.current_context:
+            return self.handle_context(command, lang)
+            
         return None
-
-    def process_command(self, command, lang):
+    
+    def handle_context(self, command, lang):
+        """Обработка контекстных сценариев"""
+        command_lower = command.lower()
+        scenario = self.context_scenarios[self.current_context]
+        
+        if self.current_context == "list_creation":
+            if "закончи" in command_lower or "хватит" in command_lower:
+                self.current_context = None
+                count = len(self.context_data.get('items', []))
+                return random.choice(scenario['complete']).format(count=count)
+            else:
+                self.context_data.setdefault('items', []).append(command)
+                return random.choice(scenario['add_item']).format(item=command)
+                
+        elif self.current_context == "reminder":
+            if not self.context_data.get('what'):
+                self.context_data['what'] = command
+                return random.choice(scenario['when'])
+            else:
+                self.context_data['when'] = command
+                self.current_context = None
+                return random.choice(scenario['confirm']).format(
+                    text=self.context_data['what'],
+                    time=self.context_data['when']
+                )
+        return None
+    
+    def process_personal_questions(self, command, lang, user_id):
+        """Обработка персональных вопросов"""
+        command_lower = command.lower()
+        
+        if "как меня зовут" in command_lower:
+            name = self.user_memory[user_id].get('name')
+            if name:
+                return f"Вы говорили, что вас зовут {name}."
+            return random.choice(self.local_responses[lang]["как меня зовут"])
+            
+        if "запомни мое имя" in command_lower or "меня зовут" in command_lower:
+            name = re.search(r'(меня зовут|мое имя) ([\w\s]+)', command_lower)
+            if name:
+                name = name.group(2).strip().title()
+                self.user_memory[user_id]['name'] = name
+                return f"Очень приятно, {name}! Я запомнил ваше имя."
+            return "Как именно вас зовут?"
+            
+        return None
+    
+    def process_command(self, command, lang, user_id='default'):
         """Обрабатывает команду с максимально возможным качеством"""
         try:
-            # 1. Проверка локальных ответов
+            # 1. Проверка персональных вопросов
+            personal_response = self.process_personal_questions(command, lang, user_id)
+            if personal_response:
+                return personal_response
+
+            # 2. Проверка локальных ответов
             local_response = self.get_local_response(command, lang)
             if local_response:
+                # Заменяем динамические данные
+                if "{current_time}" in local_response:
+                    current_time = datetime.now().strftime("%H:%M")
+                    local_response = local_response.format(current_time=current_time)
+                elif "{current_date}" in local_response:
+                    current_date = datetime.now().strftime("%d.%m.%Y")
+                    local_response = local_response.format(current_date=current_date)
+                elif "{weekday}" in local_response:
+                    weekdays = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"]
+                    weekday = weekdays[datetime.now().weekday()]
+                    local_response = local_response.format(weekday=weekday)
+                
                 return local_response
 
-            # 2. Использование OpenAI если доступно
+            # 3. Использование OpenAI если доступно
             if openai.api_key:
                 response = openai.ChatCompletion.create(
                     model=AI_MODEL,
@@ -173,7 +192,7 @@ class DeasanAI:
                 )
                 return response.choices[0].message['content']
 
-            # 3. Запасной вариант
+            # 4. Запасной вариант
             return self.get_fallback_response(lang)
 
         except Exception as e:
@@ -185,11 +204,13 @@ class DeasanAI:
         if lang == 'ru':
             return ("Вы Deasan AI - продвинутый голосовой помощник с возможностью распознавания объектов. "
                     "Отвечайте подробно и дружелюбно. Если вопрос неясен, уточните. "
-                    "Можете предлагать дополнительные варианты решения проблем.")
+                    "Можете предлагать дополнительные варианты решения проблем. "
+                    "Используйте информацию о пользователе если она доступна.")
         else:
             return ("You are Deasan AI - advanced voice assistant with object recognition capabilities. "
                     "Respond in detail and friendly manner. If question is unclear, ask for clarification. "
-                    "You can suggest additional solutions to problems.")
+                    "You can suggest additional solutions to problems. "
+                    "Use user information if available.")
 
     def get_fallback_response(self, lang):
         """Возвращает запасной ответ"""
@@ -208,6 +229,7 @@ class DeasanAI:
             return "A technical error occurred. Please try again later."
 
 deasan_ai = DeasanAI()
+conversation_manager = ConversationManager()
 
 def speak(text, lang=None):
     """Озвучивает текст с использованием gTTS (возвращает base64 аудио)"""
@@ -218,8 +240,6 @@ def speak(text, lang=None):
         # Очистка текста от специальных символов
         clean_text = re.sub(r'[^\w\s.,!?-]', '', text)
         
-        # В облачной среде мы не можем воспроизводить аудио напрямую,
-        # поэтому возвращаем данные для воспроизведения на клиенте
         from gtts import gTTS
         import io
         import base64
@@ -243,7 +263,7 @@ def should_recognize_objects(command):
     command_lower = command.lower()
     return any(trigger in command_lower for trigger in OBJECT_RECOGNITION_TRIGGERS)
 
-def process_voice_command(command):
+def process_voice_command(command, user_id='default'):
     """Обрабатывает голосовую команду"""
     try:
         lang = session.get('language', 'ru')
@@ -256,9 +276,9 @@ def process_voice_command(command):
             audio_data = speak(response["message"], lang)
             if audio_data:
                 response['audio'] = audio_data['audio']
-            return jsonify(response)
+            return response
         else:
-            ai_response = deasan_ai.process_command(command, lang)
+            ai_response = deasan_ai.process_command(command, lang, user_id)
             audio_data = speak(ai_response, lang)
             response = {
                 "type": "ai_response",
@@ -266,7 +286,7 @@ def process_voice_command(command):
             }
             if audio_data:
                 response['audio'] = audio_data['audio']
-            return jsonify(response)
+            return response
     
     except Exception as e:
         logger.error(f"Error processing voice command: {e}")
@@ -275,18 +295,45 @@ def process_voice_command(command):
         response = {"error": str(e)}
         if audio_data:
             response['audio'] = audio_data['audio']
-        return jsonify(response), 500
+        return response
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/api/toggle_voice_input', methods=['POST'])
+def toggle_voice_input():
+    """Включение/выключение голосового ввода"""
+    data = request.json
+    session['voice_input_enabled'] = data.get('enabled', False)
+    return jsonify({'success': True, 'enabled': session['voice_input_enabled']})
+
 @app.route('/api/process_command', methods=['POST'])
 def api_process_command():
     try:
+        if request.json.get('is_voice') and not session.get('voice_input_enabled', True):
+            return jsonify({
+                "error": "Голосовой ввод отключен",
+                "message": "Пожалуйста, используйте текстовый ввод"
+            }), 403
+            
         data = request.json
         command = data.get('command', '')
-        return process_voice_command(command)
+        user_id = data.get('user_id', 'default')
+        
+        # Добавляем реплику пользователя в историю
+        conversation_manager.add_to_history(user_id, "user", command)
+        
+        # Обработка команды
+        response = process_voice_command(command)
+        response['assistant_speaking'] = True
+        
+        # Обновляем историю диалога
+        if 'message' in response:
+            conversation_manager.add_to_history(user_id, "assistant", response['message'])
+        
+        return jsonify(response)
+        
     except Exception as e:
         logger.error(f"Command processing error: {e}")
         return jsonify({"error": str(e)}), 500
@@ -307,7 +354,7 @@ def detect_objects():
         image.save(buffered, format="JPEG", quality=85)
         img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-        api_key = os.environ.get('GOOGLE_API_KEY', 'AIzaSyCFR3Vmz0-hpm26OMo6NeAtrdgmigpqueU')
+        api_key = os.environ.get('GOOGLE_API_KEY')
         
         # Отправляем в Google Vision API
         response = requests.post(
@@ -428,5 +475,5 @@ def get_language():
     return jsonify({'language': session.get('language', 'ru')})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # 5000 — fallback
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
